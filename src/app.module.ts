@@ -1,3 +1,4 @@
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -7,7 +8,18 @@ import { ProductModule } from './modules/product/product.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/CRUD-byNest'),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env.development',
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('DB_URL'),
+      }),
+      inject: [ConfigService],
+    }),
+    // MongooseModule.forRoot(process.env.DB_URL),
     AuthModule,
     ProductModule,
   ],

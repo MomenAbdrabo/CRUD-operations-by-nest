@@ -8,6 +8,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 
@@ -17,19 +18,23 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector,
     private _jwtService: JwtService,
     private readonly _AuthDbService: AuthDbService,
+    private readonly config: ConfigService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const bearer = this.config.get<string>('BEARER_KEY');
     const request = context.switchToHttp().getRequest();
     const { authorization } = request.headers;
-    if (!authorization?.startsWith('abdrabo__')) {
+    if (!authorization?.startsWith(bearer)) {
       throw new BadRequestException('in-valid bearer key ');
     }
-    const token = authorization.split('abdrabo__')[1];
+    const token = authorization.split(bearer)[1];
     if (!token) {
       throw new BadRequestException('in-valid token ');
     }
     try {
-      const decoded = this._jwtService.verify(token, { secret: 'abdrabo' });
+      const decoded = this._jwtService.verify(token, {
+        secret: this.config.get<string>('SECRET_KEY'),
+      });
       if (!decoded?.id) {
         throw new BadRequestException('in-valid token ');
       }

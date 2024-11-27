@@ -8,12 +8,14 @@ import { AuthDbService } from './auth.db.service';
 import { loginDTO, signupDTO } from './validation/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private _AuthDbService: AuthDbService,
     private _jwtService: JwtService,
+    private readonly config: ConfigService,
   ) {}
   //===================== signup =================//
   async signupService(
@@ -45,12 +47,14 @@ export class AuthService {
       throw new BadRequestException('in-valid login data');
     }
     //===================== token ======================//
+
+    const secret = this.config.get<string>('SECRET_KEY');
     const accessToken = this._jwtService.sign(
       {
         id: user['_id'],
         role: user.role,
       },
-      { secret: 'abdrabo', expiresIn: 60 * 60 },
+      { secret, expiresIn: 60 * 60 },
     );
     return {
       message: 'done',

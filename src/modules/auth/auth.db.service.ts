@@ -4,15 +4,21 @@ import { User } from 'src/schemas/user.schema';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { signupDTO } from './validation/auth.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthDbService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private readonly config: ConfigService,
+  ) {}
 
   async createUser(data: signupDTO): Promise<User> {
     const { userName, email, password, role } = data;
-
-    const hashPassword = bcrypt.hashSync(password, 8);
+    const hashPassword = bcrypt.hashSync(
+      password,
+      parseInt(this.config.get<string>('SALT_ROUND')),
+    );
     const user = await this.userModel.create({
       userName,
       email,
