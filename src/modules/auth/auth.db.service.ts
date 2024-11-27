@@ -26,4 +26,8 @@ export class AuthDbService {
     const user = await this.userModel.findOne({ email });
     return user;
   }
+  async findById(id: string): Promise<User | null> {
+    const user = await this.userModel.findById(id);
+    return user;
+  }
 }

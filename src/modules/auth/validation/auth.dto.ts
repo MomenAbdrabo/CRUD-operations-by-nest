@@ -26,3 +26,12 @@ export class signupDTO {
   @IsOptional()
   role?: string;
 }
+export class loginDTO {
+  @IsString()
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
