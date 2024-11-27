@@ -1,4 +1,5 @@
 import {
+  Equals,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -21,6 +22,7 @@ export class signupDTO {
   @IsString()
   @IsNotEmpty()
   @IsStrongPassword()
+  @Equals('password', { message: 'Passwords not match cPassword' })
   cPassword: string;
   @IsString()
   @IsOptional()
