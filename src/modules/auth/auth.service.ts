@@ -1,60 +1,71 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
-  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { AuthDbService } from './auth.db.service';
-import { loginDTO, signupDTO } from './validation/auth.dto';
+import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { User } from 'src/schemas/user.schema';
+import { loginDTO, signupDTO } from './dtos';
+
+const DEFAULT_SALT_ROUND = '10';
+const ONE_HOUR_IN_SECONDS = 60 * 60;
 
 @Injectable()
 export class AuthService {
   constructor(
-    private _AuthDbService: AuthDbService,
-    private _jwtService: JwtService,
+    private readonly User: Model<User>,
+    private readonly _jwtService: JwtService,
     private readonly config: ConfigService,
   ) {}
-  //===================== signup =================//
-  async signupService(
-    body: signupDTO,
-  ): Promise<{ message: string; user: any }> {
-    const checkEmil = await this._AuthDbService.findOne(body.email);
-    if (checkEmil) {
+
+  async signup(data: signupDTO): Promise<{ message: string; user: any }> {
+    const { userName, email, password } = data;
+    const existingUser = await this.User.findOne({ email: data.email });
+    if (existingUser) {
       throw new ConflictException('Email already exists');
     }
-    const user = await this._AuthDbService.createUser(body);
+
+    const hashPassword = bcrypt.hashSync(
+      password,
+      parseInt(this.config.get<string>('SALT_ROUND', DEFAULT_SALT_ROUND)),
+    );
+    const user = await this.User.create({
+      userName,
+      email,
+      password: hashPassword,
+    });
+
     return {
       message: 'welcome',
       user,
     };
   }
-  //=================== login ===============//
-  async loginService(
-    body: loginDTO,
-  ): Promise<{ message: string; accessToken: string }> {
-    const { email, password } = body;
-    //====================== check user ==============//
-    const user = await this._AuthDbService.findOne(email);
-    if (!user) {
-      throw new NotFoundException('User not found please signup first ');
-    }
-    //==================== verifyPassword ==================//
-    const verifyPassword = bcrypt.compareSync(password, user.password);
-    if (!verifyPassword) {
-      throw new BadRequestException('in-valid login data');
-    }
-    //===================== token ======================//
 
-    const secret = this.config.get<string>('SECRET_KEY');
+  async login(
+    data: loginDTO,
+  ): Promise<{ message: string; accessToken: string }> {
+    const { email, password } = data;
+    // Check user existence
+    const user = await this.User.findOne({ email });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    // verify user password
+    const passwordIsIdentical = bcrypt.compareSync(password, user.password);
+    if (!passwordIsIdentical) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const secret = this.config.getOrThrow<string>('SECRET_KEY');
     const accessToken = this._jwtService.sign(
       {
-        id: user['_id'],
+        id: user._id.toString(),
         role: user.role,
       },
-      { secret, expiresIn: 60 * 60 },
+      { secret, expiresIn: ONE_HOUR_IN_SECONDS },
     );
     return {
       message: 'done',
