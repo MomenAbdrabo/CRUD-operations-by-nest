@@ -3,52 +3,58 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ProductService } from './product.service';
-import { createProductDTO, updateProductDTO } from './validation/product.dto';
 import { Types } from 'mongoose';
 import { AuthGuard } from 'src/guard/auth/auth.guard';
 import { Roles } from 'src/decorator/roles/roles.decorator';
+import { CreateProductDTO, UpdateProductDTO } from './dtos';
+import { MongoIdPathParamDto } from 'src/common/dtos';
 
 @Controller('products')
-export class productController {
-  constructor(private readonly _ProductService: ProductService) {}
-  //================= create product ==============//
-  @Post('create')
-  @Roles(['admin', 'user'])
+export class ProductController {
+  constructor(private readonly _productService: ProductService) {}
+
+  @Post()
   @UseGuards(AuthGuard)
   async createProduct(
-    @Body() body: createProductDTO,
-    @Req() request: any,
+    @Body() body: CreateProductDTO,
+    @Req() request: Request,
   ): Promise<any> {
-    return this._ProductService.createProduct(body, request.user);
+    return this._productService.createProduct(body, request['user']);
   }
-  //============get all product=============//
-  @Get('')
+
+  @Get()
   getProduct(): any {
-    return this._ProductService.getProductService();
+    return this._productService.search();
   }
+
   @Get('/:id')
-  @Roles(['admin', 'user'])
   @UseGuards(AuthGuard)
-  getProductById(@Param('id') id: Types.ObjectId): any {
-    return this._ProductService.getProductByIdService(id);
+  getProductById(@Param() pathParams: MongoIdPathParamDto): any {
+    return this._productService.getById(new Types.ObjectId(pathParams.id));
   }
+
   @Patch('update/:id')
-  @Roles(['admin', 'user'])
   @UseGuards(AuthGuard)
-  updateProduct(@Param() params: any, @Body() body: updateProductDTO) {
-    return this._ProductService.updateProductByIdService(params.id, body);
+  updateProduct(
+    @Param() params: MongoIdPathParamDto,
+    @Body() body: UpdateProductDTO,
+  ) {
+    return this._productService.updateById(new Types.ObjectId(params.id), body);
   }
+
   @Delete('delete/:id')
   @Roles(['admin'])
   @UseGuards(AuthGuard)
-  deleteProduct(@Param() params: any) {
-    return this._ProductService.deleteProductByIdService(params.id);
+  deleteProduct(@Param() params: MongoIdPathParamDto) {
+    return this._productService.deleteById(new Types.ObjectId(params.id));
   }
 }

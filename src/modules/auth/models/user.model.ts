@@ -7,16 +7,19 @@ export type UserDocument = HydratedDocument<User>;
 export class User {
   @Prop({ trim: true, required: true, lowercase: true })
   userName: string;
+
   @Prop({ required: true, unique: true })
   email: string;
+
   @Prop({ required: true })
   password: string;
+
   @Prop({ default: 'user', enum: ['user', 'admin'] })
   role: string;
 }
 
 export const userSchema = SchemaFactory.createForClass(User);
 
-export const userModel = MongooseModule.forFeature([
+export const userInjectionToken = MongooseModule.forFeature([
   { name: User.name, schema: userSchema },
 ]);

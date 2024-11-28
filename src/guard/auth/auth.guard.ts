@@ -1,4 +1,3 @@
-import { AuthDbService } from './../../modules/auth/auth.db.service';
 import {
   BadRequestException,
   CanActivate,
@@ -11,15 +10,19 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User } from 'src/modules/auth/models';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private _jwtService: JwtService,
-    private readonly _AuthDbService: AuthDbService,
     private readonly config: ConfigService,
+    @InjectModel(User.name) private User: Model<User>,
   ) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const bearer = this.config.get<string>('BEARER_KEY');
     const request = context.switchToHttp().getRequest();
@@ -27,20 +30,20 @@ export class AuthGuard implements CanActivate {
     if (!authorization?.startsWith(bearer)) {
       throw new BadRequestException('in-valid bearer key ');
     }
-    const token = authorization.split(bearer)[1];
+    const token = authorization.replace(bearer)[1];
     if (!token) {
-      throw new BadRequestException('in-valid token ');
+      throw new UnauthorizedException('not authorized');
     }
     try {
       const decoded = this._jwtService.verify(token, {
         secret: this.config.get<string>('SECRET_KEY'),
       });
       if (!decoded?.id) {
-        throw new BadRequestException('in-valid token ');
+        throw new UnauthorizedException('not authorized');
       }
-      const user = await this._AuthDbService.findById(decoded.id);
+      const user = await this.User.findById(decoded.id);
       if (!user) {
-        throw new UnauthorizedException('in-valid login account ');
+        throw new UnauthorizedException('not authorized');
       }
       const requiredRoles = this.reflector.getAllAndOverride<string[]>(
         'roles',

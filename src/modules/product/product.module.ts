@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { ProductService } from './product.service';
-import { productController } from './product.controller';
-import { productModel } from 'src/schemas/product.schema';
-import { ProductDbService } from './product.db.service';
-import { JwtService } from '@nestjs/jwt';
-import { AuthDbService } from '../auth/auth.db.service';
-import { userModel } from 'src/schemas/user.schema';
+import { ProductController } from './product.controller';
+import { productInjectionToken } from 'src/modules/product/models/product.model';
+import { userInjectionToken } from '../auth/models';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [productModel, userModel],
-  providers: [ProductService, ProductDbService, JwtService, AuthDbService],
-  controllers: [productController],
+  imports: [userInjectionToken, productInjectionToken, JwtModule, AuthModule],
+  providers: [ProductService],
+  controllers: [ProductController],
 })
 export class ProductModule {}

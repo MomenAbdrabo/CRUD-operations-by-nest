@@ -7,8 +7,9 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { User } from 'src/schemas/user.schema';
-import { loginDTO, signupDTO } from './dtos';
+import { User } from 'src/modules/auth/models/user.model';
+import { loginDTO, SignupDTO } from './dtos';
+import { InjectModel } from '@nestjs/mongoose';
 
 const DEFAULT_SALT_ROUND = '10';
 const ONE_HOUR_IN_SECONDS = 60 * 60;
@@ -16,12 +17,12 @@ const ONE_HOUR_IN_SECONDS = 60 * 60;
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly User: Model<User>,
+    @InjectModel(User.name) private readonly User: Model<User>,
     private readonly _jwtService: JwtService,
     private readonly config: ConfigService,
   ) {}
 
-  async signup(data: signupDTO): Promise<{ message: string; user: any }> {
+  async signup(data: SignupDTO): Promise<{ message: string; user: any }> {
     const { userName, email, password } = data;
     const existingUser = await this.User.findOne({ email: data.email });
     if (existingUser) {

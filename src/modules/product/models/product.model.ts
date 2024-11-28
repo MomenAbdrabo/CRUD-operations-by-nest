@@ -1,5 +1,5 @@
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { User } from './user.schema';
+import { User } from '../../auth/models/user.model';
 import mongoose from 'mongoose';
 
 @Schema()
@@ -17,6 +17,6 @@ export class Product {
 }
 
 export const productSchema = SchemaFactory.createForClass(Product);
-export const productModel = MongooseModule.forFeature([
+export const productInjectionToken = MongooseModule.forFeature([
   { name: Product.name, schema: productSchema },
 ]);
