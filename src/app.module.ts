@@ -10,12 +10,12 @@ import { ProductModule } from './modules/product/product.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env.development',
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('DB_URL'),
+        uri: configService.getOrThrow<string>('DB_URL'),
       }),
       inject: [ConfigService],
     }),
